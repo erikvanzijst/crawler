@@ -8,18 +8,16 @@ from threading import current_thread, Barrier, Lock
 from bs4 import BeautifulSoup
 import requests
 
-CONCURRENCY = 64
-root: str = sys.argv[1] if len(sys.argv) == 2 else 'http://be.archive.ubuntu.com/ubuntu/dists/'
+inflight = 1
 
 
-if __name__ == '__main__':
+def crawl(concurrency: int, root: str) -> set[str]:
     seen: set[str] = set()
     barrier = Barrier(2)
     lock = Lock()
-    inflight = 1
 
     start = time()
-    with ThreadPoolExecutor(CONCURRENCY) as executor, requests.Session() as session:
+    with ThreadPoolExecutor(concurrency) as executor, requests.Session() as session:
         def crawl(url: str) -> None:
             global inflight
             while True:
@@ -44,5 +42,4 @@ if __name__ == '__main__':
         crawl(root)
         barrier.wait()
 
-    print(f'{len(seen)} urls crawled in {time() - start:.2f} seconds ({len(seen) / (time() - start):.2f} urls/second with {CONCURRENCY} threads)')
-
+    return seen

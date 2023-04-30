@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 # Simple syncio web crawler, following all a.href's that end in a '/'.
-
 import asyncio
-import sys
 from urllib.parse import urljoin
 from time import time
 
 import httpx
 from bs4 import BeautifulSoup
 
-CONCURRENCY = 64
-root: str = sys.argv[1] if len(sys.argv) == 2 else 'http://be.archive.ubuntu.com/ubuntu/dists/'
+inflight = 1
 
 
-if __name__ == '__main__':
+def crawl(concurrency: int, root: str) -> set[str]:
     seen: set[str] = {'http://be.archive.ubuntu.com/ubuntu/ubuntu/'}
     q = asyncio.Queue()
     barrier = asyncio.Barrier(2)    # Python 3.11 or higher required
-    inflight = 1
 
-    async def crawl(client: httpx.AsyncClient) -> None:
+    async def crawl(client: httpx.AsyncClient, root: str) -> None:
         global inflight
 
         while inflight:
@@ -42,14 +38,11 @@ if __name__ == '__main__':
             inflight -= 1
         await barrier.wait()
 
-    async def main() -> None:
+    async def main(concurrency: int, root: str) -> set[str]:
         await q.put(root)
-        async with httpx.AsyncClient(limits=httpx.Limits(max_keepalive_connections=60, max_connections=1000)) as client:
-            for i in range(CONCURRENCY):
-                asyncio.create_task(crawl(client), name=f'{i:03d}')
+        async with httpx.AsyncClient(limits=httpx.Limits(max_keepalive_connections=100, max_connections=1000, keepalive_expiry=60)) as client:
+            for i in range(concurrency):
+                asyncio.create_task(crawl(client, root), name=f'{i:03d}')
             await barrier.wait()
-
-    start = time()
-    asyncio.run(main())
-    print(f'{len(seen)} urls crawled in {time() - start:.2f} seconds '
-          f'({len(seen) / (time() - start):.2f} urls/second with {CONCURRENCY} coroutines)')
+        return seen
+    return asyncio.run(main(concurrency, root))
