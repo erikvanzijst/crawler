@@ -24,7 +24,7 @@ def crawl(concurrency: int, root: str) -> set[str]:
                 try:
                     print(f'{current_thread().ident} processing {url}')
                     html = session.get(url).content
-                    soup = BeautifulSoup(html, 'html.parser')
+                    soup = BeautifulSoup(html, 'lxml')
                     paths = {urljoin(url, a.get('href')) for a in soup.find_all('a')}
                     with lock:
                         for u in filter(lambda p: p.startswith(root) and p.endswith('/'), paths - seen):

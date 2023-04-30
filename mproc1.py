@@ -21,7 +21,7 @@ def crawl(url: str) -> set[str]:
         print(f'{os.getpid()} processing {url}')
         try:
             html = session.get(url).content
-            soup = BeautifulSoup(html, 'html.parser')
+            soup = BeautifulSoup(html, 'lxml')
             urls = {urljoin(url, a.get('href')) for a in soup.find_all('a')}
             return set(filter(lambda u: u.startswith(root) and u.endswith('/'), urls))
         except IOError:

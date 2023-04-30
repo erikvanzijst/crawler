@@ -25,7 +25,7 @@ def crawl(concurrency: int, root: str) -> set[str]:
                 try:
                     print(f'{asyncio.current_task().get_name()} processing {url}')
                     html = (await client.get(url, timeout=None)).content
-                    soup = BeautifulSoup(html, 'html.parser')
+                    soup = BeautifulSoup(html, 'lxml')
                     paths = {urljoin(url, a.get('href')) for a in soup.find_all('a')}
                     for u in filter(lambda p: p.startswith(root) and p.endswith('/'), paths - seen):
                         await q.put(u)

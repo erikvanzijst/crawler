@@ -24,13 +24,14 @@ if __name__ == '__main__':
     seen = crawler.crawl(args.concurrency, args.root)
 
     print(f'{len(seen)} urls crawled in {time() - start:.2f} seconds '
-          f'({len(seen) / (time() - start):.2f} urls/second with {args.concurrency} coroutines)')
+          f'({len(seen) / (time() - start):.2f} urls/second with {args.concurrency} workers)')
 
     # Write results to csv file
     df = pandas.DataFrame({'prog': [args.prog],
                            'python': [f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}'],
                            'root': [args.root], 'concurrency': [args.concurrency], 'urls': [len(seen)],
-                           'time': [time() - start]})
+                           'time': [time() - start],
+                           'parser': ['lxml']})
     if os.path.exists('results.csv'):
         df = pandas.concat([pandas.read_csv('results.csv'), df])
     df.to_csv('results.csv', index=False)
