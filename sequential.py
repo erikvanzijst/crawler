@@ -6,7 +6,7 @@ import requests
 
 
 def crawl(concurrency: int, root: str) -> set[str]:
-    seen: set[str] = set()
+    seen: set[str] = {'http://be.archive.ubuntu.com/ubuntu/ubuntu/'}
     with requests.Session() as session:
         def crawl(url: str) -> None:
             while True:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # Simple multithreaded web crawler, following all a.href's that end in a '/'.
-import sys
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 from time import time
@@ -12,7 +11,7 @@ inflight = 1
 
 
 def crawl(concurrency: int, root: str) -> set[str]:
-    seen: set[str] = set()
+    seen: set[str] = {'http://be.archive.ubuntu.com/ubuntu/ubuntu/'}
     barrier = Barrier(2)
     lock = Lock()
 
