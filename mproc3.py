@@ -6,22 +6,29 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-session = requests.Session()
+
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
 
 def worker(root: str, work_q: Queue, result_q: Queue) -> None:
-    while True:
-        url = work_q.get()
+    with requests.Session() as session:
         while True:
-            try:
-                print(f'{os.getpid()} processing {url}')
-                html = session.get(url).content
-                soup = BeautifulSoup(html, 'lxml')
-                urls = {urljoin(url, a.get('href')) for a in soup.find_all('a')}
-                result_q.put(set(filter(lambda u: u.startswith(root) and u.endswith('/'), urls)))
-                break
-            except IOError as e:
-                print(f'Retrying {url}: {str(e)}')
+            work = work_q.get()
+            results = set[str]()
+            print(f'{os.getpid()} processing {len(work)} urls...')
+            for url in work:
+                while True:
+                    try:
+                        print(f'{os.getpid()} processing {url}')
+                        html = session.get(url).content
+                        soup = BeautifulSoup(html, 'lxml')
+                        urls = {urljoin(url, a.get('href')) for a in soup.find_all('a')}
+                        results.update(filter(lambda u: u.startswith(root) and u.endswith('/'), urls))
+                        break
+                    except IOError as e:
+                        print(f'Retrying {url}: {str(e)}')
+            result_q.put(results)
 
 
 def crawl(concurrency: int, root: str) -> set[str]:
@@ -32,14 +39,14 @@ def crawl(concurrency: int, root: str) -> set[str]:
     for w in workers:
         w.start()
 
-    work_q.put(root)
+    work_q.put({root})
     inflight = 1
     while inflight:
-        urls = result_q.get() - seen
-        seen.update(urls)
-        for url in urls:
+        todo = result_q.get() - seen
+        seen.update(todo)
+        for urls in chunker(list(todo), 50):
             inflight += 1
-            work_q.put(url)
+            work_q.put(urls)
         inflight -= 1
 
     return seen
